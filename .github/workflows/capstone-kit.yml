@@ -1,0 +1,189 @@
+# Gurukul's Capstone test kit, as a reusable workflow (D-500 §5).
+#
+# Your repository calls it (see examples/learner-workflow.yml). It runs on
+# GitHub's free minutes, in YOUR repository's Actions, against YOUR backend
+# started inside the job. Nothing of yours runs anywhere else: Gurukul only
+# reads the finished run's result from GitHub.
+#
+# Your backend must accept the shop key and staff code it is given in the
+# environment (SHOP_KEY, SHOP_STAFF_CODE) — see the README, "Your backend's
+# side". Unless you pass your own as secrets, a fresh pair is made for every run.
+name: Gurukul capstone kit
+
+on:
+  workflow_call:
+    inputs:
+      shop-base-url:
+        description: "Your API's base inside the job, e.g. http://localhost:5000/api — the contract's routes are relative to it."
+        required: true
+        type: string
+      capabilities:
+        description: "Your chosen add-ons, comma-separated (shown on your Capstone page). The core always runs."
+        required: false
+        type: string
+        default: ""
+      start-command:
+        description: "Starts your API in the background of this job, e.g. dotnet run --project api/Grocery.Api --urls http://localhost:5000"
+        required: true
+        type: string
+      wait-on-url:
+        description: "A URL that answers once your API is up (any HTTP status counts)."
+        required: true
+        type: string
+      setup-command:
+        description: "Optional: run before your API starts, e.g. docker compose up -d db"
+        required: false
+        type: string
+        default: ""
+      working-directory:
+        description: "Where setup-command and start-command run, relative to your repository."
+        required: false
+        type: string
+        default: "."
+      wait-seconds:
+        description: "How long to wait for wait-on-url."
+        required: false
+        type: number
+        default: 180
+      dotnet-version:
+        description: "Optional: a .NET SDK to install, e.g. 10.0.x"
+        required: false
+        type: string
+        default: ""
+      java-version:
+        description: "Optional: a Java JDK to install (Temurin), e.g. 21"
+        required: false
+        type: string
+        default: ""
+      node-version:
+        description: "Node.js for the kit (and your API, if it is Node)."
+        required: false
+        type: string
+        default: "22"
+      kit-ref:
+        description: "Optional: the kit version to run. Default: the same version as this workflow."
+        required: false
+        type: string
+        default: ""
+    secrets:
+      SHOP_KEY:
+        description: "Optional: a shop key your backend accepts. Default: a fresh one for each run."
+        required: false
+      SHOP_STAFF_CODE:
+        description: "Optional: the staff code your backend accepts. Default: a fresh one for each run."
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  kit:
+    name: Gurukul capstone kit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out your repository
+        uses: actions/checkout@v4
+
+      - name: Fetch the kit
+        uses: actions/checkout@v4
+        with:
+          repository: Ziaz-Digital/gurukul-public
+          ref: ${{ inputs.kit-ref != '' && inputs.kit-ref || github.job_workflow_sha }}
+          path: .gurukul-kit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - uses: actions/setup-dotnet@v4
+        if: inputs.dotnet-version != ''
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - uses: actions/setup-java@v4
+        if: inputs.java-version != ''
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+
+      - name: Shop key and staff code for this run
+        env:
+          GIVEN_KEY: ${{ secrets.SHOP_KEY }}
+          GIVEN_CODE: ${{ secrets.SHOP_STAFF_CODE }}
+        run: |
+          key="$GIVEN_KEY"
+          code="$GIVEN_CODE"
+          if [ -z "$key" ]; then
+            key="gkshop_$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64url'))")"
+          fi
+          if [ -z "$code" ]; then
+            code="$(node -e "const a='23456789ABCDEFGHJKMNPQRSTUVWXYZ';const b=require('crypto').randomBytes(12);process.stdout.write([...b].map(x=>a[x%a.length]).join(''))")"
+          fi
+          echo "::add-mask::$key"
+          echo "::add-mask::$code"
+          echo "SHOP_KEY=$key" >> "$GITHUB_ENV"
+          echo "SHOP_STAFF_CODE=$code" >> "$GITHUB_ENV"
+
+      - name: Set up (your setup-command)
+        if: inputs.setup-command != ''
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          SETUP_COMMAND: ${{ inputs.setup-command }}
+        run: bash -c "$SETUP_COMMAND"
+
+      - name: Start your API
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          START_COMMAND: ${{ inputs.start-command }}
+        run: |
+          nohup bash -c "$START_COMMAND" > "$RUNNER_TEMP/api.log" 2>&1 &
+          echo "started"
+
+      - name: Wait for your API
+        env:
+          WAIT_URL: ${{ inputs.wait-on-url }}
+          WAIT_SECONDS: ${{ inputs.wait-seconds }}
+        run: |
+          for i in $(seq 1 "$WAIT_SECONDS"); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' "$WAIT_URL" || true)
+            if [ "$status" != "000" ]; then echo "Your API answered ($status) after ${i}s."; exit 0; fi
+            sleep 1
+          done
+          echo "::error::Your API did not answer at $WAIT_URL within ${WAIT_SECONDS}s."
+          tail -n 100 "$RUNNER_TEMP/api.log" || true
+          exit 1
+
+      - name: Install the kit
+        working-directory: .gurukul-kit/capstone-kit
+        run: npm ci --no-audit --no-fund
+
+      - name: Run the kit
+        working-directory: .gurukul-kit/capstone-kit
+        env:
+          SHOP_BASE_URL: ${{ inputs.shop-base-url }}
+          CAPABILITIES: ${{ inputs.capabilities }}
+          CI: "true"
+        run: npx playwright test
+
+      - name: Summary
+        if: always()
+        working-directory: .gurukul-kit/capstone-kit
+        env:
+          CAPABILITIES: ${{ inputs.capabilities }}
+        run: node scripts/summary.js
+
+      - name: Your API's log
+        if: failure()
+        run: tail -n 200 "$RUNNER_TEMP/api.log" || true
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gurukul-capstone-kit-report
+          path: |
+            .gurukul-kit/capstone-kit/playwright-report
+            .gurukul-kit/capstone-kit/results
+          retention-days: 30
+          if-no-files-found: ignore

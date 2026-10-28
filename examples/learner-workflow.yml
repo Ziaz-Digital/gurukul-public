@@ -1,0 +1,17 @@
+# Save as .github/workflows/gurukul-capstone-kit.yml in YOUR repository
+# (Gurukul reads the result of a workflow with exactly this file name).
+name: Gurukul capstone kit
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  capstone-kit:
+    uses: Ziaz-Digital/gurukul-public/.github/workflows/capstone-kit.yml@v1
+    with:
+      capabilities: discount-codes,click-and-collect   # yours, from your Capstone page
+      setup-command: docker compose up -d db           # or leave this line out
+      start-command: dotnet run --project api/Grocery.Api --urls http://localhost:5000
+      wait-on-url: http://localhost:5000/api/categories
+      shop-base-url: http://localhost:5000/api
+      dotnet-version: 10.0.x
