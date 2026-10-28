@@ -1,0 +1,6 @@
+node_modules/
+capstone-kit/playwright-report/
+capstone-kit/test-results/
+capstone-kit/results/
+.env
+*.log

@@ -1,0 +1,21 @@
+{
+  "name": "gurukul-capstone-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gurukul's Capstone test kit: API contract tests for your grocery-shop backend, run in your own pipeline.",
+  "license": "MIT",
+  "scripts": {
+    "test": "playwright test",
+    "list": "playwright test --list",
+    "typecheck": "tsc --noEmit",
+    "summary": "node scripts/summary.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "26.1.0",
+    "typescript": "5.7.3"
+  }
+}
