@@ -1,0 +1,35 @@
+{
+  "name": "gurukul-grocery-react",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Gurukul Capstone starter template (React + Vite): your grocery shop's front end, packed as one <gk-project> bundle.",
+  "gurukul": {
+    "templateVersion": "1.0.0",
+    "projectKind": "grocery-shop",
+    "framework": "react",
+    "capabilities": []
+  },
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "bundle": "npm run build && node scripts/make-bundle.mjs",
+    "preview": "node scripts/preview.mjs"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "7.18.4"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "typescript": "5.9.3",
+    "vite": "8.3.4"
+  }
+}

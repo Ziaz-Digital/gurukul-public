@@ -1,0 +1,114 @@
+# Gurukul's project bundle build, as a reusable workflow (D-500 addendum 8, Phase 8.2).
+#
+# Your repository calls it (see examples/project-bundle-workflow.yml). It runs on
+# GitHub's free minutes, in YOUR repository's Actions: it installs and builds YOUR
+# front end (made from a Gurukul starter template), packs it as project-bundle.zip,
+# checks the zip against the contract, and — when you push a tag — attaches it to a
+# GitHub Release of that tag. Gurukul only ever downloads that zip and checks its
+# static files: your code is compiled here and nowhere else.
+name: Gurukul project bundle
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: "Where your template copy lives (its package.json), relative to your repository."
+        required: false
+        type: string
+        default: "."
+      node-version:
+        description: "Node.js for the build."
+        required: false
+        type: string
+        default: "22"
+      tools-ref:
+        description: "Optional: the version of Gurukul's checker to use. Default: the same version as this workflow."
+        required: false
+        type: string
+        default: ""
+    outputs:
+      bundle-version:
+        description: "The version written into gk-project.json."
+        value: ${{ jobs.bundle.outputs.version }}
+
+jobs:
+  bundle:
+    name: Gurukul project bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Writing the release asset needs contents: write; your calling workflow grants it.
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out your repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Gurukul's checker
+        uses: actions/checkout@v4
+        with:
+          repository: Ziaz-Digital/gurukul-public
+          ref: ${{ inputs.tools-ref != '' && inputs.tools-ref || github.job_workflow_sha }}
+          path: .gurukul-public
+          sparse-checkout: tools
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Bundle version
+        id: version
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # A tag v1.2.0 makes version 1.2.0; otherwise package.json's version.
+          if [ "$REF_TYPE" = "tag" ]; then
+            version="${REF_NAME#v}"
+          else
+            version="$(node -p "require('./package.json').version")"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "GK_BUNDLE_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Install
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          NG_CLI_ANALYTICS: "false"
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the bundle
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          NG_CLI_ANALYTICS: "false"
+        run: npm run bundle
+
+      - name: Check the bundle against the contract
+        env:
+          BUNDLE: ${{ inputs.working-directory }}/project-bundle.zip
+        run: |
+          node .gurukul-public/tools/validate-project-bundle.mjs "$BUNDLE" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-bundle
+          path: ${{ inputs.working-directory }}/project-bundle.zip
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Attach it to the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          BUNDLE: ${{ inputs.working-directory }}/project-bundle.zip
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$BUNDLE" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$BUNDLE" --verify-tag --title "$TAG" --notes "Gurukul project bundle $TAG" --repo "$GITHUB_REPOSITORY"
+          fi
+          echo "Attached project-bundle.zip to release $TAG." >> "$GITHUB_STEP_SUMMARY"

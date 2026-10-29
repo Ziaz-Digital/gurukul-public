@@ -1,0 +1,19 @@
+# Save as .github/workflows/gurukul-project-bundle.yml in YOUR repository.
+#
+# Every push to main builds and checks your bundle (see the run's summary).
+# Push a tag such as v1.0.0 to attach project-bundle.zip to a GitHub Release:
+#   git tag v1.0.0 && git push origin v1.0.0
+# Then mark that release "Ready to publish" on your Capstone page.
+name: Gurukul project bundle
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write   # to attach project-bundle.zip to your release
+jobs:
+  bundle:
+    uses: Ziaz-Digital/gurukul-public/.github/workflows/project-bundle.yml@v1
+    with:
+      working-directory: frontend   # the folder holding your copy of the template
