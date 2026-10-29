@@ -59,7 +59,8 @@ Open http://localhost:4382/p/preview/demo/. If your shop works there, it will wo
 1. Copy `examples/project-bundle-workflow.yml` from Gurukul's public repository to `.github/workflows/gurukul-project-bundle.yml` in your repository, and set `working-directory` to this folder.
 2. Push to `main`: your GitHub Actions build and check the bundle.
 3. When you are ready, push a tag: `git tag v1.0.0` then `git push origin v1.0.0`. The workflow attaches `project-bundle.zip` to a GitHub Release.
-4. On your Capstone page, mark that release **Ready to publish**. The Gurukul team publishes it.
+4. On your Capstone's **Connect your shop** page, mark that release **Ready to publish**. The Gurukul team publishes it and emails you the address of your project page.
+5. Open your project page and check your shop there. In Gurukul, **Your project page** is where you choose **Show my project** and which stages the page shares.
 
 Your code is built only in your own GitHub pipeline. Gurukul only downloads the finished zip.
 

@@ -58,7 +58,11 @@ Gurukul shows every learner's finished project in one site of its own. Interview
 1. **Start from a template.** Copy [`templates/grocery-angular`](templates/grocery-angular) (Angular 21) or [`templates/grocery-react`](templates/grocery-react) (React 19 + Vite) into your repository and follow its README. Each one is a small working shop (products and a basket) wired to the shop server with your shop key from a git-ignored `.env.local`: `npm run dev`. Build the rest of your shop inside it.
 2. **Call the API only through the library** in `src/gurukul-shop-client/` (generated from the shop server's OpenAPI). The same calls work on your laptop (your `gkshop_` key) and on Gurukul's site (the project's public key and a visit token, which the site supplies).
 3. **Pack it:** `npm run bundle` makes `project-bundle.zip`, and `npm run preview` shows it inside a stand-in for Gurukul's site. If it works there, it works on Gurukul's site.
-4. **Build it in your pipeline.** Copy [`examples/project-bundle-workflow.yml`](examples/project-bundle-workflow.yml) to `.github/workflows/gurukul-project-bundle.yml`. Every push builds and checks the bundle; a tag such as `v1.0.0` attaches `project-bundle.zip` to a GitHub Release. Mark that release **Ready to publish** on your Capstone page; the Gurukul team publishes it.
+4. **Build it in your pipeline.** Copy [`examples/project-bundle-workflow.yml`](examples/project-bundle-workflow.yml) to `.github/workflows/gurukul-project-bundle.yml`. Every push builds and checks the bundle; a tag such as `v1.0.0` attaches `project-bundle.zip` to a GitHub Release. List the add-ons you built in `package.json` under `gurukul.capabilities` first: they should be the ones you chose as Product Owner.
+5. **Mark it ready.** On your Capstone's **Connect your shop** page, give the release tag and press **Ready to publish**. Gurukul checks the bundle at once; the Gurukul team then publishes it and emails you the address of your **project page**.
+6. **Check it and choose what it shows.** Open your project page and the live project. In Gurukul, **Your project page** (from your Capstone page) is where you switch **Show my project** on or off (off until you switch it on; it lists the project for your college) and choose which stages the page shares.
+
+Your back end and database are not hosted: they are built and tested in your own pipeline by your tests and the Capstone test kit. You need no cloud account for any of this.
 
 ### The contract, in short
 
