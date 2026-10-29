@@ -1,6 +1,6 @@
 # Gurukul public
 
-Public material for Ziaz Gurukul learners. Today it holds one thing: the **Capstone test kit**.
+Public material for Ziaz Gurukul learners. Today it holds two things: the **Capstone test kit** and the **deploy guides** for putting your finished shop into your own cloud.
 
 ## The Capstone test kit
 
@@ -9,7 +9,7 @@ In the Capstone you build a grocery shop's backend. Every learner's API follows 
 - It runs in **your own GitHub pipeline**, on GitHub's free minutes, against **your own backend** started inside the job.
 - It runs the **core** tests plus the tests for **the add-ons you chose**. Nothing else.
 - It only calls your API over HTTP. It needs no browser and never touches your database.
-- Gurukul only **reads the result** from GitHub, and your Capstone page shows "Test kit: passed on commit abc1234". Your code never runs anywhere but GitHub and your own machine.
+- Gurukul only **reads the result** from GitHub, and your Capstone page shows "Test kit: passed on commit abc1234". Gurukul never runs your code: it runs on GitHub, on your own machine, and in your own cloud once you deploy it.
 
 ## Add it to your repository in 3 steps
 
@@ -61,6 +61,15 @@ Besides the contract's routes for your capabilities:
 - CORS that lets a front end on `http://localhost:<port>` call it.
 
 If your API limits its rate, the kit waits and tries again (it reads `Retry-After`). That makes it slower, but never makes it fail.
+
+## Deploy guides
+
+When your shop is finished, you deploy all three tiers (your database, your API and your front end) to **your own** cloud account, from your own GitHub Actions pipeline, in the Capstone's DevOps stage; the Release stage goes live on that deployment. Gurukul does not host your shop. While you build, nothing changes: your front end runs on your laptop against Gurukul's shop server with your shop key.
+
+- [Deploy to Azure](deploy/azure.md) — Azure for Students or the Azure free account; Azure SQL's free offer, App Service's Free plan, Static Web Apps' Free plan, Key Vault.
+- [Deploy to AWS](deploy/aws.md) — the AWS Free plan's credits; RDS for SQL Server Express, Elastic Beanstalk, S3 and CloudFront, Parameter Store.
+
+Both start with the guardrails (a budget or credit watch, one region, delete when done), cover .NET or Java and Angular or React, and say what each service costs. Prices and free offers are as of October 2026; check the current offer on the cloud's own pages.
 
 ## License
 
