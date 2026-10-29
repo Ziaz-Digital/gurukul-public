@@ -1,6 +1,6 @@
 # Gurukul public
 
-Public material for Ziaz Gurukul learners. Today it holds one thing: the **Capstone test kit**.
+Public material for Ziaz Gurukul learners: the **Capstone test kit** for your backend, and the **starter templates** for your front end (see "Your front end in the Gurukul showcase" below).
 
 ## The Capstone test kit
 
@@ -50,6 +50,27 @@ You can also point the kit at Gurukul's own shop server with the key and staff c
 - Gurukul reads the newest finished run of `gurukul-capstone-kit.yml` on your default branch, from a push or a manual run (pull requests do not count). Only GitHub's `success` counts as passed. A cancelled run is ignored.
 
 It checks the contract, not your design. How you build the API (architecture, database, layers, extra routes of your own that do not clash) is yours.
+
+## Your front end in the Gurukul showcase
+
+Gurukul shows every learner's finished project in one site of its own. Interviewers open your project there and use **your own front end**, looking exactly as it did on your laptop, against Gurukul's shop server with the add-ons you chose. You do not need a cloud account, and nothing of yours is compiled on Gurukul's servers.
+
+1. **Start from a template.** Copy [`templates/grocery-angular`](templates/grocery-angular) (Angular 21) or [`templates/grocery-react`](templates/grocery-react) (React 19 + Vite) into your repository and follow its README. Each one is a small working shop (products and a basket) wired to the shop server with your shop key from a git-ignored `.env.local`: `npm run dev`. Build the rest of your shop inside it.
+2. **Call the API only through the library** in `src/gurukul-shop-client/` (generated from the shop server's OpenAPI). The same calls work on your laptop (your `gkshop_` key) and on Gurukul's site (the project's public key and a visit token, which the site supplies).
+3. **Pack it:** `npm run bundle` makes `project-bundle.zip`, and `npm run preview` shows it inside a stand-in for Gurukul's site. If it works there, it works on Gurukul's site.
+4. **Build it in your pipeline.** Copy [`examples/project-bundle-workflow.yml`](examples/project-bundle-workflow.yml) to `.github/workflows/gurukul-project-bundle.yml`. Every push builds and checks the bundle; a tag such as `v1.0.0` attaches `project-bundle.zip` to a GitHub Release. List the add-ons you built in `package.json` under `gurukul.capabilities` first: they should be the ones you chose as Product Owner.
+5. **Mark it ready.** On your Capstone's **Connect your shop** page, give the release tag and press **Ready to publish**. Gurukul checks the bundle at once; the Gurukul team then publishes it and emails you the address of your **project page**.
+6. **Check it and choose what it shows.** Open your project page and the live project. In Gurukul, **Your project page** (from your Capstone page) is where you switch **Show my project** on or off (off until you switch it on; it lists the project for your college) and choose which stages the page shares.
+
+Your back end and database are not hosted: they are built and tested in your own pipeline by your tests and the Capstone test kit. You need no cloud account for any of this.
+
+### The contract, in short
+
+- The bundle is **one custom element, `<gk-project>`**, with everything inside its Shadow DOM. The site sets its attributes: `api-base-url`, `public-key`, `visit-token`, `base-path`, `project-kind`, `project-code`. The templates already do all of this.
+- **Routes** live in the address bar **under `base-path`**. Use your framework's router for every link; never write to `window.location` (except to open an order's `paymentUrl`, with a `returnUrl` under your base path).
+- **The site starts each visit**, not your code. When a visit runs out, the library asks the site for a new one (the `gk-visit-expired` event) and retries.
+- **Not allowed:** calls to any address but the shop server (no CDNs, no analytics); service workers; cookies; storage keys that do not start with `gk-<project-code>-`; styles outside your element (nothing on `html`, `body` or the page's `<head>`); zone.js or anything that changes the page's globals; any key or token in the bundle.
+- **`project-bundle.zip`:** `gk-project.json` at the top (`contractVersion`, `projectKind`, `version`, `framework`, `frameworkVersion`, `templateVersion`, `capabilities`, `entry`) and static files only: `js mjs css json map svg png jpg jpeg webp gif ico woff woff2 txt` (no `.html`). At most **5 MB** zipped, 20 MB unzipped, 500 files. Check one yourself: `node tools/validate-project-bundle.mjs project-bundle.zip`.
 
 ## What your backend needs for the kit
 

@@ -1,0 +1,6 @@
+node_modules/
+dist/
+project-bundle.zip
+.env.local
+.env.*.local
+*.log

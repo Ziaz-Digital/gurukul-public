@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.angular/
+.dev/
+project-bundle.zip
+.env.local
+.env.*.local
+*.log

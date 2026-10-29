@@ -4,3 +4,11 @@ capstone-kit/test-results/
 capstone-kit/results/
 .env
 *.log
+# Phase 8.2: built bundles and the templates' build output
+project-bundle.zip
+dist/
+.angular/
+.dev/
+.env.local
+tools/playwright-report/
+tools/test-results/

@@ -1,0 +1,16 @@
+@if (host.ready()) {
+  <div class="shop">
+    <header class="bar">
+      <span class="brand">My grocery shop</span>
+      <nav>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Shop</a>
+        <a routerLink="/basket" routerLinkActive="active">Basket ({{ shop.count() }})</a>
+      </nav>
+    </header>
+    <main>
+      <router-outlet />
+    </main>
+  </div>
+} @else {
+  <p class="muted">Waiting for the host…</p>
+}

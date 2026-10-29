@@ -1,0 +1,22 @@
+{
+  "name": "gurukul-public-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Gurukul's own checks for the project-bundle contract: the validator's tests and the mount test of both starter templates. Learners do not need this folder.",
+  "license": "MIT",
+  "scripts": {
+    "generate-client": "node generate-shop-client.mjs",
+    "check-client": "node generate-shop-client.mjs --check",
+    "validate": "node validate-project-bundle.mjs",
+    "test:validator": "node --test tests/validator.test.mjs",
+    "test:mount": "playwright test",
+    "test": "npm run check-client && npm run test:validator && npm run test:mount"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

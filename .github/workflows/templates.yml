@@ -1,0 +1,75 @@
+# Gurukul's own check of the starter templates (Phase 8.2): both templates build a
+# bundle that passes the validator, the validator refuses broken bundles, and both
+# bundles mount in their preview host with the API stubbed. Runs in THIS repository
+# on changes to the templates or the tools.
+name: Templates
+
+on:
+  push:
+    branches: [main]
+    paths: ["templates/**", "tools/**", ".github/workflows/templates.yml"]
+  pull_request:
+    paths: ["templates/**", "tools/**", ".github/workflows/templates.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  templates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NG_CLI_ANALYTICS: "false"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: The library in each template matches the generator
+        run: node tools/generate-shop-client.mjs --check
+
+      - name: Angular template — install, type-check, bundle
+        working-directory: templates/grocery-angular
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run bundle
+
+      - name: React template — install, type-check, bundle
+        working-directory: templates/grocery-react
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run bundle
+
+      - name: Both bundles pass the validator
+        run: |
+          node tools/validate-project-bundle.mjs templates/grocery-angular/project-bundle.zip
+          node tools/validate-project-bundle.mjs templates/grocery-react/project-bundle.zip
+
+      - name: Install the tools
+        working-directory: tools
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: The validator refuses broken bundles
+        working-directory: tools
+        run: npm run test:validator
+
+      - name: Both bundles mount in the preview host
+        working-directory: tools
+        run: npm run test:mount
+
+      - name: Keep the report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: templates-mount-report
+          path: tools/playwright-report
+          retention-days: 14
+          if-no-files-found: ignore
