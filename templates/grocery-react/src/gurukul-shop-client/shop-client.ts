@@ -548,7 +548,59 @@ export interface ShopVisitStarted {
   visitToken: string;
   expiresAtUtc: string;
   visitsToday: number;
-  dailyLimit: number;
+}
+
+export interface ShopPageOfShopStaffViewOrder {
+  items: ShopStaffViewOrder[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ShopPageOfShopStaffViewProduct {
+  items: ShopStaffViewProduct[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ShopStaffViewLine {
+  productName: string;
+  quantity: number;
+  priceMinor: number;
+}
+
+export interface ShopStaffViewOrder {
+  orderNumber: string;
+  status: string;
+  placedAtUtc: string;
+  paidAtUtc?: string | null;
+  fulfilment?: string | null;
+  lineCount: number;
+  itemCount: number;
+  totalMinor: number;
+  currency: string;
+  slot: ShopStaffViewSlot;
+  lines: ShopStaffViewLine[];
+}
+
+export interface ShopStaffViewProduct {
+  id: number;
+  sku: string;
+  name: string;
+  categoryName?: string | null;
+  priceMinor: number;
+  currency: string;
+  stockOnHand: number;
+  stockAvailable: number;
+  reorderLevel: number;
+  isActive: boolean;
+  low: boolean;
+}
+
+export interface ShopStaffViewSlot {
+  startsAtUtc: string;
+  endsAtUtc: string;
 }
 
 // ---- The client ----
@@ -902,5 +954,20 @@ export class ShopClient extends ShopClientBase {
   /** POST /public/visits */
   postPublicVisits(options?: CallOptions): Promise<ShopVisitStarted> {
     return this.call<ShopVisitStarted>("POST", `/public/visits`, "none", options);
+  }
+
+  /** GET /public/staff-view/inventory */
+  getPublicStaffViewInventory(options?: CallOptions & { query?: { search?: string; page?: number; pageSize?: number } }): Promise<ShopPageOfShopStaffViewProduct> {
+    return this.call<ShopPageOfShopStaffViewProduct>("GET", `/public/staff-view/inventory`, "none", options);
+  }
+
+  /** GET /public/staff-view/low-stock */
+  getPublicStaffViewLowStock(options?: CallOptions & { query?: { page?: number; pageSize?: number } }): Promise<ShopPageOfShopStaffViewProduct> {
+    return this.call<ShopPageOfShopStaffViewProduct>("GET", `/public/staff-view/low-stock`, "none", options);
+  }
+
+  /** GET /public/staff-view/orders */
+  getPublicStaffViewOrders(options?: CallOptions & { query?: { status?: string; page?: number; pageSize?: number } }): Promise<ShopPageOfShopStaffViewOrder> {
+    return this.call<ShopPageOfShopStaffViewOrder>("GET", `/public/staff-view/orders`, "none", options);
   }
 }

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gurukul project preview</title>
+    <link rel="icon" href="data:," />
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; background: #f6f6f4; color: #1d1d1b; }
+      header { padding: 12px 16px; background: #1d1d1b; color: #fff; font-size: 14px; }
+      header strong { font-weight: 600; }
+      #status { padding: 12px 16px; font-size: 14px; }
+      #status:empty { display: none; }
+      main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    </style>
+  </head>
+  <body>
+    <!-- This page stands in for Gurukul's master UI. It mounts your bundle the way the
+         master UI will; nothing here goes into your bundle. -->
+    <header><strong>Gurukul preview</strong> <span id="about"></span></header>
+    <div id="status" role="status"></div>
+    <main id="project"></main>
+    <script type="module" src="/host.js"></script>
+  </body>
+</html>

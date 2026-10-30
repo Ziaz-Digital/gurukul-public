@@ -53,7 +53,7 @@ async function stubApi(page: Page) {
     if (h['x-shop-key'] !== KEY) return json(401, { status: 401, code: 'shop.key_invalid', title: 'Unknown key' });
     if (method === 'POST' && path === '/public/visits') {
       visits++;
-      return json(201, { visitToken: `gkvis_test${visits}`, expiresAtUtc: '2030-01-01T00:00:00Z', visitsToday: visits, dailyLimit: 10 });
+      return json(201, { visitToken: `gkvis_test${visits}`, expiresAtUtc: '2030-01-01T00:00:00Z', visitsToday: visits });
     }
     if (!h['x-shop-visit'] || h['x-shop-visit'] === 'gkvis_test1') {
       return json(401, { status: 401, code: 'site.visit_required', title: 'Start a new visit' });
