@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My grocery shop (dev)</title>
+  </head>
+  <body>
+    <!-- The dev page: only for `npm run dev` on your machine. It is NOT in your bundle.
+         It mounts <gk-project> the way Gurukul's master UI does, with your own shop key
+         (from .env.local, written to .dev/dev-config.json by npm run dev). -->
+    <div id="host"></div>
+    <script type="module">
+      const host = document.getElementById('host');
+      const res = await fetch('dev-config.json').catch(() => null);
+      const cfg = res && res.ok ? await res.json() : null;
+      if (!cfg || !cfg.apiBaseUrl || !cfg.shopKey) {
+        host.textContent = 'Copy .env.example to .env.local and fill in SHOP_API_BASE_URL and SHOP_KEY, then run npm run dev again.';
+      } else {
+        await customElements.whenDefined('gk-project');
+        const el = document.createElement('gk-project');
+        el.setAttribute('api-base-url', cfg.apiBaseUrl);
+        el.setAttribute('public-key', cfg.shopKey);
+        el.setAttribute('base-path', '');
+        el.setAttribute('project-kind', 'grocery-shop');
+        el.setAttribute('project-code', 'dev');
+        host.append(el);
+      }
+    </script>
+  </body>
+</html>

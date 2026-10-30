@@ -1,0 +1,66 @@
+@if (host.ready()) {
+  <div class="shop">
+    <button type="button" class="skip" (click)="skip()">Skip to content</button>
+    <header class="bar">
+      <a class="brand" routerLink="/" aria-label="The Corner Grocer, home">
+        <span class="logo" aria-hidden="true">●</span> The Corner Grocer
+      </a>
+      <nav aria-label="Shop">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Shop</a>
+        <a routerLink="/track" routerLinkActive="active">Track order</a>
+        @if (shop.signInOn()) {
+          @if (shop.customer()) {
+            <a routerLink="/account" routerLinkActive="active">My account</a>
+          } @else {
+            <a routerLink="/sign-in" routerLinkActive="active">Sign in</a>
+          }
+        }
+        @if (host.hosted()) {
+          <a routerLink="/staff-view" routerLinkActive="active" class="staff-link">View as staff (read only)</a>
+        } @else {
+          <a routerLink="/staff" routerLinkActive="active" class="staff-link">Staff</a>
+        }
+        <a routerLink="/basket" routerLinkActive="active" class="basket-link">
+          Basket ({{ shop.count() }})
+        </a>
+      </nav>
+    </header>
+
+    <main id="gk-main" tabindex="-1">
+      <router-outlet />
+    </main>
+
+    <footer class="foot">
+      @if (shop.has('opening-hours')) {
+        <a routerLink="/hours">Opening hours</a>
+      }
+      <span>A Gurukul Capstone reference shop. Payments are simulated; nothing is charged.</span>
+    </footer>
+  </div>
+
+  @if (shop.availableRequests().length) {
+    <div class="scrim">
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="gk-back-title" #dialog>
+        @for (r of shop.availableRequests().slice(0, 1); track r.id) {
+          <h2 id="gk-back-title">Still looking for {{ r.product?.name ?? r.name }}? We have it now.</h2>
+          @if (r.product) {
+            <p class="muted">{{ money(r.product.priceMinor, r.product.currency) }}</p>
+          }
+          @if (dialogError()) {
+            <p class="error" role="alert">{{ dialogError() }}</p>
+          }
+          <div class="actions">
+            @if (r.product) {
+              <button type="button" class="primary" [disabled]="dialogBusy()" [attr.aria-busy]="dialogBusy()" (click)="addRequested(r.id, r.product.id)">
+                {{ dialogBusy() ? 'Adding…' : 'Add to basket' }}
+              </button>
+            }
+            <button type="button" class="ghost" [disabled]="dialogBusy()" (click)="shop.dismissRequest(r.id)">No thanks</button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+} @else {
+  <p class="muted pad">Waiting for the host…</p>
+}

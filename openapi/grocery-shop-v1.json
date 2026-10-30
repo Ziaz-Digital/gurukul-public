@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "Gurukul Capstone shop server",
-    "description": "The grocery-shop backend every Gurukul Capstone learner's own front end connects to while they build (D-500), and the superset contract their own backend implements for the capabilities they chose (docs/business-analysis/gurukul-capstone/shop-server.md). Each learner has a data space of their own. Send your shop key on every call as `X-Shop-Key: gkshop_…`; staff routes also need `Authorization: Bearer gkst_…` from `POST /staff/sessions`. Browsers may call it from http://localhost:<port> and http://127.0.0.1:<port>, and a published project from Gurukul's project showcase. A published project sends its PUBLIC key (`X-Shop-Key: gkpub_…`, which the showcase hands to the project bundle): customer routes only — staff and /dev routes answer 403 shop.public_key. The showcase starts each visit with POST /public/visits (public key only; at most 10 visits a day per project, then 429 site.daily_limit) and the bundle sends the visitToken as `X-Shop-Visit` on every other call (401 site.visit_required without it). Errors are RFC 9457 problem details with a stable `code`. Limits: 120 requests/minute per key (the tracking lookup 10/minute per key and IP); 500 products, 200 orders a day; 5,000 stock movements kept; orders, movements and receipts older than 60 days are deleted. Money is integer minor units. Add-on routes (shop-server.md, \"Add-ons\") answer 404 capability.not_chosen unless you chose that add-on on your Product Owner stage. The payment page (`paymentUrl`) is a simulated hosted page: open it with `?returnUrl=http://localhost:<port>/…`; it posts `result=paid|failed` back to itself and returns to `returnUrl?orderNumber=…&result=paid|failed`. Never trust `result`: read GET /orders/{orderNumber}.",
+    "description": "The grocery-shop backend every Gurukul Capstone learner's own front end connects to while they build (D-500), and the superset contract their own backend implements for the capabilities they chose (docs/business-analysis/gurukul-capstone/shop-server.md). Each learner has a data space of their own. Send your shop key on every call as `X-Shop-Key: gkshop_…`; staff routes also need `Authorization: Bearer gkst_…` from `POST /staff/sessions`. Browsers may call it from http://localhost:<port> and http://127.0.0.1:<port>, and a published project from Gurukul's project showcase. A published project sends its PUBLIC key (`X-Shop-Key: gkpub_…`, which the showcase hands to the project bundle): customer routes only — staff and /dev routes answer 403 shop.public_key; the read-only staff view (GET /public/staff-view/inventory, /orders, /low-stock — no shopper's personal data) is open to it. The showcase starts each visit with POST /public/visits (public key only) and the bundle sends the visitToken as `X-Shop-Visit` on every other call (401 site.visit_required without it). A published project answers a limited number of public-key API calls a day (the admin's setting, default 500, every call counted, the visit included), then 429 site.daily_limit with Retry-After until the next UTC day. With the public key the catalogue reads (products, categories, opening hours, product images) and the staff view are sent `Cache-Control: private, max-age=…` so a browser re-reading them within the window does not call again; everything else is `no-store`. Errors are RFC 9457 problem details with a stable `code`. Limits: 120 requests/minute per key (the tracking lookup 10/minute per key and IP); 500 products, 200 orders a day; 5,000 stock movements kept; orders, movements and receipts older than 60 days are deleted. Money is integer minor units. Add-on routes (shop-server.md, \"Add-ons\") answer 404 capability.not_chosen unless you chose that add-on on your Product Owner stage. The payment page (`paymentUrl`) is a simulated hosted page: open it with `?returnUrl=http://localhost:<port>/…`; it posts `result=paid|failed` back to itself and returns to `returnUrl?orderNumber=…&result=paid|failed`. Never trust `result`: read GET /orders/{orderNumber}.",
     "version": "v1"
   },
   "servers": [
@@ -6658,6 +6658,305 @@
           }
         }
       }
+    },
+    "/api/gurukul/shop/v1/public/staff-view/inventory": {
+      "get": {
+        "tags": [
+          "ShopStaffView"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewProduct"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewProduct"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewProduct"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gurukul/shop/v1/public/staff-view/low-stock": {
+      "get": {
+        "tags": [
+          "ShopStaffView"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewProduct"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewProduct"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewProduct"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gurukul/shop/v1/public/staff-view/orders": {
+      "get": {
+        "tags": [
+          "ShopStaffView"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewOrder"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewOrder"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPageOfShopStaffViewOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProblem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8556,14 +8855,6 @@
               "string"
             ],
             "format": "int32"
-          },
-          "dailyLimit": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
           }
         }
       },
@@ -8600,6 +8891,243 @@
           },
           "hasValue": {
             "type": "boolean"
+          }
+        }
+      },
+      "ShopPageOfShopStaffViewOrder": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopStaffViewOrder"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ShopPageOfShopStaffViewProduct": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopStaffViewProduct"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ShopStaffViewLine": {
+        "type": "object",
+        "properties": {
+          "productName": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "priceMinor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ShopStaffViewOrder": {
+        "type": "object",
+        "properties": {
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "placedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "paidAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fulfilment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lineCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "itemCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalMinor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "slot": {
+            "$ref": "#/components/schemas/ShopStaffViewSlot"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopStaffViewLine"
+            }
+          }
+        }
+      },
+      "ShopStaffViewProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priceMinor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "stockOnHand": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stockAvailable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reorderLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "low": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ShopStaffViewSlot": {
+        "type": "object",
+        "properties": {
+          "startsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAtUtc": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
@@ -8651,6 +9179,9 @@
     },
     {
       "name": "ShopVisit"
+    },
+    {
+      "name": "ShopStaffView"
     }
   ]
 }

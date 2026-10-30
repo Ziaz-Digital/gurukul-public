@@ -1,15 +1,17 @@
 # Gurukul's own check of the starter templates (Phase 8.2): both templates build a
 # bundle that passes the validator, the validator refuses broken bundles, and both
-# bundles mount in their preview host with the API stubbed. Runs in THIS repository
-# on changes to the templates or the tools.
+# bundles mount in their preview host with the API stubbed. The reference shop
+# (examples/reference-shop-angular, D-500 addendum 9) builds, passes the validator and
+# walks its whole shop in the preview host with the API stubbed. Runs in THIS
+# repository on changes to the templates, the reference shop or the tools.
 name: Templates
 
 on:
   push:
     branches: [main]
-    paths: ["templates/**", "tools/**", ".github/workflows/templates.yml"]
+    paths: ["templates/**", "examples/reference-shop-angular/**", "tools/**", ".github/workflows/templates.yml"]
   pull_request:
-    paths: ["templates/**", "tools/**", ".github/workflows/templates.yml"]
+    paths: ["templates/**", "examples/reference-shop-angular/**", "tools/**", ".github/workflows/templates.yml"]
   workflow_dispatch:
 
 permissions:
@@ -46,10 +48,18 @@ jobs:
           npm run typecheck
           npm run bundle
 
-      - name: Both bundles pass the validator
+      - name: Reference shop — install, type-check, bundle
+        working-directory: examples/reference-shop-angular
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run bundle
+
+      - name: All three bundles pass the validator
         run: |
           node tools/validate-project-bundle.mjs templates/grocery-angular/project-bundle.zip
           node tools/validate-project-bundle.mjs templates/grocery-react/project-bundle.zip
+          node tools/validate-project-bundle.mjs examples/reference-shop-angular/project-bundle.zip
 
       - name: Install the tools
         working-directory: tools
@@ -65,11 +75,19 @@ jobs:
         working-directory: tools
         run: npm run test:mount
 
+      - name: The reference shop works end to end in the preview host
+        working-directory: examples/reference-shop-angular
+        run: |
+          npx playwright install chromium
+          npm run test:e2e
+
       - name: Keep the report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: templates-mount-report
-          path: tools/playwright-report
+          path: |
+            tools/playwright-report
+            examples/reference-shop-angular/playwright-report
           retention-days: 14
           if-no-files-found: ignore

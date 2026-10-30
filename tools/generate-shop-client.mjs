@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const snapshot = join(root, 'openapi', 'grocery-shop-v1.json');
-const templates = ['grocery-angular', 'grocery-react'];
+// Every folder that carries a copy of the library: both templates and the reference shop.
+const templates = ['templates/grocery-angular', 'templates/grocery-react', 'examples/reference-shop-angular'];
 const API_PREFIX = '/api/gurukul/shop/v1';
 // Schemas .NET describes for binary results; the client returns a Blob instead.
 const SKIP_SCHEMAS = new Set(['FileContentResult', 'EntityTagHeaderValue', 'StringSegment']);
@@ -280,10 +281,10 @@ export class ShopClientBase {
 
 const doc = await load(from);
 const code = generate(doc);
-const bridge = readFileSync(join(root, 'tools', 'shop-client', 'host-bridge.ts'), 'utf8');
+const bridge = readFileSync(join(root, 'tools', 'shop-client', 'host-bridge.ts'), 'utf8').replace(/\r\n/g, '\n');
 let stale = false;
 for (const t of templates) {
-  const dir = join(root, 'templates', t, 'src', 'gurukul-shop-client');
+  const dir = join(root, t, 'src', 'gurukul-shop-client');
   const files = { 'shop-client.ts': code, 'host-bridge.ts': bridge };
   for (const [name, text] of Object.entries(files)) {
     const file = join(dir, name);
